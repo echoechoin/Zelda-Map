@@ -4,6 +4,7 @@
         "name": "Points of Interest",
         "img": "BotW_Points-of-Interest",
         "color": "#4bc5ee",
+        "checked": true,
         "children": [
             {
                 "id": "1934",
@@ -33,6 +34,7 @@
         "name": "Equipment",
         "img": "treasure.png",
         "color": "#ffad48",
+        "checked": true,
         "children": [
             {
                 "id": "1903",
@@ -69,6 +71,7 @@
         "name": "Items",
         "img": "treasure.png",
         "color": "#3cbc75",
+        "checked": true,
         "children": [
             {
                 "id": "1911",
@@ -119,6 +122,7 @@
         "name": "Locations",
         "img": "BotW_Locations",
         "color": "#8e72b9",
+        "checked": true,
         "children": [
             {
                 "id": "1921",
@@ -190,6 +194,7 @@
         "name": "Enemies",
         "img": "BotW_Enemies",
         "color": "#ff422e",
+        "checked": true,
         "children": [
             {
                 "id": "1931",
