@@ -95,7 +95,7 @@ const MapComponent = ({ catalog, location }) => {
     const map = L.map(mapContainerRef.current, MAP_OPTIONS)
       .setView(MAP_CENTER, DEFAULT_ZOOM);
 
-    L.tileLayer('./src/assets/map/tiles/{z}_{x}_{y}.png', {
+    L.tileLayer(`${import.meta.env.BASE_URL}assets/map/tiles/{z}_{x}_{y}.png`, {
       minZoom: 0,
       maxZoom: 7,
       noWrap: true,
@@ -157,7 +157,7 @@ const MapComponent = ({ catalog, location }) => {
         if (category && category.img) {
           try {
             // 构建图标路径
-            const iconPath = `./src/assets/map/icons/${category.img}`;
+            const iconPath = `${import.meta.env.BASE_URL}assets/map/icons/${category.img}`;
             const icon = createIcon(iconPath, category.color);
             
             // 创建标记（注意 y 坐标是负数，需要转换）

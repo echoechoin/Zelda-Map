@@ -105,7 +105,7 @@ export default function CatalogComponent({ catalog, updateCatalog, style }) {
           <Box sx={LABEL_BOX_SX}>
             {!hasChildren && item.img && (
               <img
-                src={`./src/assets/map/icons/${item.img}`}
+                src={`${import.meta.env.BASE_URL}assets/map/icons/${item.img}`}
                 style={ICON_STYLE}
                 alt=""
               />

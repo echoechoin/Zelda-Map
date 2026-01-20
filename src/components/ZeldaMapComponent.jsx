@@ -4,6 +4,7 @@ import CatalogComponent from "./CatalogComponent.jsx";
 import catalogData from '../assets/map/catalog.json';
 import locationData from '../assets/map/location.json';
 import { useImmer } from "use-immer";
+import { colors } from '@mui/material';
 
 // 提取样式对象到组件外部，避免每次渲染都创建新对象
 const catalogStyle = {
@@ -12,7 +13,8 @@ const catalogStyle = {
   position: 'fixed',
   top: 0,
   right: 0,
-  backgroundColor: 'white'
+  backgroundColor: 'white',
+  color: 'black' 
 };
 
 function ZeldaMapComponent() {
