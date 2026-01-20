@@ -10,6 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.7",
+    "@mui/material": "^7.3.7",
+    "@mui/x-tree-view": "^8.25.0",
     "leaflet": "^1.9.4",
     "mui": "^0.0.1",
     "react": "^19.2.0",

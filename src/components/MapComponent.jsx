@@ -25,6 +25,10 @@ const MapComponent = () => {
       attributionControl: false,  // 右下角是否显示属性
       maxBounds: bounds,          // 边界
       maxBoundsViscosity: 0.5,    // 调整地图拖动到边界时的 “阻力感”
+
+      // control
+      zoomControl: false,
+
       // Animation
       zoomAnimation: true,        // 开启缩放动画（默认true，确保没被关闭）
       zoomAnimationThreshold: 4,  // 缩放级别差超过4才禁用动画（提高阈值）
@@ -38,7 +42,7 @@ const MapComponent = () => {
 
     // 4. 配置瓦片层（注意：React 中静态资源路径建议用 public 文件夹）
     // 推荐：将地图瓦片放到 public/maps 目录下，路径改为 /maps/{z}_{x}_{y}.png
-    L.tileLayer('./src/assets/maps/{z}_{x}_{y}.png', {
+    L.tileLayer('./src/assets/map/tiles/{z}_{x}_{y}.png', {
       minZoom: 0,
       maxZoom: 7,
       noWrap: true,
@@ -60,12 +64,11 @@ const MapComponent = () => {
 
   return (
     <div
-      ref={mapContainerRef} // 修复：绑定容器 ref
+      ref={mapContainerRef}
       style={{ 
         height: '100vh', 
         width: '100%', 
         background: '#000',
-        // 防止 Leaflet 样式问题
         position: 'relative',
         zIndex: 0 
       }}
