@@ -3,11 +3,10 @@ import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
 import { TreeItem } from '@mui/x-tree-view';
 import { useTreeItemModel } from '@mui/x-tree-view/hooks';
 import Button from '@mui/material/Button';
-import catalog from '../assets/map/catalog.json';
 import DeleteIcon from '@mui/icons-material/Delete';
 import './Catalog.css';
 
-export default function Catalog({ style }) {
+export default function CatalogComponent({ catalog, updateCatalog, style }) {
   const customTreeItem = (props) => {
     const item = useTreeItemModel(props.itemId);
     const hasChildren = item.children && item.children.length > 0;
@@ -50,8 +49,8 @@ export default function Catalog({ style }) {
         height: '30px',
         flexShrink: 0,
       }}>
-        <Button variant="contained" sx={{ flex: 1 }}>All</Button>
-        <Button variant="contained" startIcon={<DeleteIcon />} sx={{ flex: 1 }}>Clear</Button>
+        <Button variant="outlined" sx={{ flex: 1 }}>All</Button>
+        <Button variant="outlined" startIcon={<DeleteIcon />} sx={{ flex: 1 }}>Clear</Button>
       </Box>
       <Box sx={{
         overflowY: 'auto',

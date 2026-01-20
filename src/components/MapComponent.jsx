@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-const MapComponent = () => {
+const MapComponent = ({catalog, location }) => {
   // 容器 ref（挂载 DOM 元素）
   const mapContainerRef = useRef(null);
   // 地图实例 ref（存储 Leaflet 地图对象）
