@@ -5,7 +5,7 @@ import { TreeItem } from '@mui/x-tree-view';
 import { useTreeItemModel } from '@mui/x-tree-view/hooks';
 import Button from '@mui/material/Button';
 import DeleteIcon from '@mui/icons-material/Delete';
-import './Catalog.css';
+import './CatalogComponent.css';
 
 // 提取样式对象到组件外部，避免重复创建
 const LABEL_BOX_SX = {
@@ -56,6 +56,21 @@ const getSelectedItems = (catalog) => {
   };
   traverse(catalog);
   return selectedItems;
+};
+
+// 递归获取所有节点的 id（包括子节点）
+const getAllItemIds = (catalog) => {
+  const allIds = [];
+  const traverse = (nodes) => {
+    for (const node of nodes) {
+      allIds.push(node.id);
+      if (node.children && node.children.length > 0) {
+        traverse(node.children);
+      }
+    }
+  };
+  traverse(catalog);
+  return allIds;
 };
 
 // 在 immer 的 draft 中递归更新 checked 状态
@@ -134,13 +149,35 @@ export default function CatalogComponent({ catalog, updateCatalog, style }) {
     });
   }, [updateCatalog]);
 
+  const handleAllClick = useCallback(() => {
+    updateCatalog(draft => {
+      const allIds = getAllItemIds(draft);
+      updateCheckedInDraft(draft, allIds);
+    });
+  }, [updateCatalog]);
+
+  const handleClearClick = useCallback(() => {
+    updateCatalog(draft => {
+      updateCheckedInDraft(draft, []);
+    });
+  }, [updateCatalog]);
+
   return (
     <Box style={containerStyle}>
       <Box sx={HEADER_BOX_SX}>
-        <Button variant="outlined" sx={BUTTON_SX}>
+        <Button 
+          variant="outlined"
+          sx={BUTTON_SX}
+          onClick={handleAllClick}
+        >
           All
         </Button>
-        <Button variant="outlined" startIcon={<DeleteIcon />} sx={BUTTON_SX}>
+        <Button
+          variant="outlined"
+          startIcon={<DeleteIcon />}
+          sx={BUTTON_SX}
+          onClick={handleClearClick}
+        >
           Clear
         </Button>
       </Box>

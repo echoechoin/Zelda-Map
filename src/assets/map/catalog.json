@@ -2,7 +2,7 @@
     {
         "id": "1901",
         "name": "Points of Interest",
-        "img": "BotW_Points-of-Interest",
+        "img": "location.png",
         "color": "#4bc5ee",
         "checked": true,
         "children": [
@@ -120,7 +120,7 @@
     {
         "id": "1920",
         "name": "Locations",
-        "img": "BotW_Locations",
+        "img": "location.png",
         "color": "#8e72b9",
         "checked": true,
         "children": [
@@ -192,7 +192,7 @@
     {
         "id": "1930",
         "name": "Enemies",
-        "img": "BotW_Enemies",
+        "img": "location.png",
         "color": "#ff422e",
         "checked": true,
         "children": [

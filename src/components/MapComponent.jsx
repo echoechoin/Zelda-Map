@@ -37,10 +37,57 @@ const CONTAINER_STYLE = {
   zIndex: 0
 };
 
+// 递归获取所有 checked 为 true 的节点 id
+const getCheckedCategoryIds = (catalog) => {
+  const checkedIds = new Set();
+  const traverse = (nodes) => {
+    for (const node of nodes) {
+      if (node.checked) {
+        checkedIds.add(node.id);
+      }
+      if (node.children && node.children.length > 0) {
+        traverse(node.children);
+      }
+    }
+  };
+  traverse(catalog);
+  return checkedIds;
+};
+
+// 从 catalog 中获取分类信息（用于创建图标）
+const getCategoryInfo = (catalog) => {
+  const categoryMap = new Map();
+  const traverse = (nodes) => {
+    for (const node of nodes) {
+      if (node.img) {
+        categoryMap.set(node.id, {
+          img: node.img,
+          color: node.color
+        });
+      }
+      if (node.children && node.children.length > 0) {
+        traverse(node.children);
+      }
+    }
+  };
+  traverse(catalog);
+  return categoryMap;
+};
+
+// 创建 Leaflet 图标
+const createIcon = (iconUrl, color) => {
+  return L.icon({
+    iconUrl: iconUrl,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+    popupAnchor: [0, -10]
+  });
+};
+
 const MapComponent = ({ catalog, location }) => {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
-  console.log("update MapComponent");
+  const mapMarkerRef = useRef([]); // 用于存储和更新地图标记
 
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
@@ -60,11 +107,81 @@ const MapComponent = ({ catalog, location }) => {
 
     return () => {
       if (mapInstanceRef.current) {
+        // 清理所有标记
+        mapMarkerRef.current.forEach(({ marker }) => {
+          mapInstanceRef.current.removeLayer(marker);
+        });
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
+        mapMarkerRef.current = [];
       }
     };
   }, []);
+
+  // 计算需要显示的标记
+  const visibleLocations = useMemo(() => {
+    if (!catalog || !location) return [];
+    
+    const checkedCategoryIds = getCheckedCategoryIds(catalog);
+    return location.filter(loc => 
+      checkedCategoryIds.has(loc.markerCategoryId) && loc.visible === "1"
+    );
+  }, [catalog, location]);
+
+  // 更新标记：添加新标记，删除不需要的标记
+  useEffect(() => {
+    if (!mapInstanceRef.current || !catalog) return;
+
+    const categoryInfo = getCategoryInfo(catalog);
+    const currentMarkerIds = new Set(mapMarkerRef.current.map(m => m.itemId));
+    const visibleLocationIds = new Set(visibleLocations.map(loc => loc.id));
+
+    // 删除不再需要的标记
+    mapMarkerRef.current = mapMarkerRef.current.filter(({ itemId, marker }) => {
+      if (!visibleLocationIds.has(itemId)) {
+        try {
+          mapInstanceRef.current.removeLayer(marker);
+        } catch (error) {
+          console.warn('Failed to remove marker:', error);
+        }
+        return false;
+      }
+      return true;
+    });
+
+    // 添加新标记
+    visibleLocations.forEach(loc => {
+      if (!currentMarkerIds.has(loc.id)) {
+        // 直接使用 catalog 中的图标
+        const category = categoryInfo.get(loc.markerCategoryId);
+        if (category && category.img) {
+          try {
+            // 构建图标路径
+            const iconPath = `./src/assets/map/icons/${category.img}`;
+            const icon = createIcon(iconPath, category.color);
+            
+            // 创建标记（注意 y 坐标是负数，需要转换）
+            const lat = parseFloat(loc.y);
+            const lng = parseFloat(loc.x);
+            
+            if (!isNaN(lat) && !isNaN(lng)) {
+              const marker = L.marker([lat, lng], { icon })
+                .addTo(mapInstanceRef.current)
+                .bindPopup(loc.name || '');
+              
+              mapMarkerRef.current.push({
+                itemId: loc.id,
+                categoryId: loc.markerCategoryId,
+                marker
+              });
+            }
+          } catch (error) {
+            console.warn('Failed to create marker for location:', loc.id, error);
+          }
+        }
+      }
+    });
+  }, [visibleLocations, catalog]);
 
   return <div ref={mapContainerRef} style={CONTAINER_STYLE} />;
 };
