@@ -1,6 +1,7 @@
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import useLocationComponent from './LocationComponent';
 
 // 提取常量，避免在组件内部重复计算
 const TILE_SIZE = 256;
@@ -35,6 +36,43 @@ const CONTAINER_STYLE = {
   background: '#000',
   position: 'relative',
   zIndex: 0
+};
+
+// 提示框样式
+const TIP_BOX_STYLE = {
+  position: 'absolute',
+  top: '10px',
+  left: '10px',
+  backgroundColor: 'rgba(255, 255, 255, 0.85)',
+  color: '#000',
+  padding: '12px 16px',
+  borderRadius: '8px',
+  fontSize: '14px',
+  zIndex: 1000,
+  maxWidth: '320px',
+  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
+  border: '1px solid rgba(255, 255, 255, 0.15)',
+  backdropFilter: 'blur(10px)',
+  fontFamily: 'system-ui, -apple-system, sans-serif'
+};
+
+const CLOSE_BUTTON_STYLE = {
+  position: 'absolute',
+  top: '4px',
+  right: '4px',
+  background: 'transparent',
+  border: 'none',
+  color: '#000',
+  cursor: 'pointer',
+  fontSize: '20px',
+  width: '24px',
+  height: '24px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: '4px',
+  padding: 0,
+  lineHeight: 1
 };
 
 // 递归获取所有 checked 为 true 的节点 id
@@ -75,7 +113,18 @@ const getCategoryInfo = (catalog) => {
 };
 
 // 创建 Leaflet 图标
-const createIcon = (iconUrl, color) => {
+const createIcon = (iconUrl, color, isVisited = false) => {
+  // 如果已访问，使用 divIcon 并应用灰色滤镜
+  if (isVisited) {
+    return L.divIcon({
+      className: 'custom-marker-icon visited',
+      html: `<img src="${iconUrl}" style="width: 20px; height: 20px; filter: grayscale(100%); opacity: 0.6;" alt="" />`,
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
+      popupAnchor: [0, -10]
+    });
+  }
+  
   return L.icon({
     iconUrl: iconUrl,
     iconSize: [20, 20],
@@ -88,12 +137,25 @@ const MapComponent = ({ catalog, location }) => {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const mapMarkerRef = useRef([]); // 用于存储和更新地图标记
+  const { toggleLocationVisited, isLocationVisited, visitedLocations, version } = useLocationComponent();
+  const [showTip, setShowTip] = useState(true);
 
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
+    // 确保地图容器背景为黑色
+    if (mapContainerRef.current) {
+      mapContainerRef.current.style.backgroundColor = '#000';
+    }
+
     const map = L.map(mapContainerRef.current, MAP_OPTIONS)
       .setView(MAP_CENTER, DEFAULT_ZOOM);
+
+    // 设置 Leaflet 地图容器的背景色
+    const mapContainer = map.getContainer();
+    if (mapContainer) {
+      mapContainer.style.backgroundColor = '#000';
+    }
 
     L.tileLayer(`${import.meta.env.BASE_URL}assets/map/tiles/{z}_{x}_{y}.png`, {
       minZoom: 0,
@@ -149,41 +211,94 @@ const MapComponent = ({ catalog, location }) => {
       return true;
     });
 
-    // 添加新标记
+    // 添加新标记和更新已存在标记的访问状态
     visibleLocations.forEach(loc => {
+      const isVisited = isLocationVisited(loc.id);
+      const category = categoryInfo.get(loc.markerCategoryId);
+      
+      if (!category || !category.img) return;
+      
       if (!currentMarkerIds.has(loc.id)) {
-        // 直接使用 catalog 中的图标
-        const category = categoryInfo.get(loc.markerCategoryId);
-        if (category && category.img) {
-          try {
-            // 构建图标路径
-            const iconPath = `${import.meta.env.BASE_URL}assets/map/icons/${category.img}`;
-            const icon = createIcon(iconPath, category.color);
+        // 创建新标记
+        try {
+          const iconPath = `${import.meta.env.BASE_URL}assets/map/icons/${category.img}`;
+          const icon = createIcon(iconPath, category.color, isVisited);
+          
+          const lat = parseFloat(loc.y);
+          const lng = parseFloat(loc.x);
+          
+          if (!isNaN(lat) && !isNaN(lng)) {
+            const marker = L.marker([lat, lng], { icon })
+              .addTo(mapInstanceRef.current)
+              .bindPopup(loc.name || '');
             
-            // 创建标记（注意 y 坐标是负数，需要转换）
-            const lat = parseFloat(loc.y);
-            const lng = parseFloat(loc.x);
+            // 添加双击事件
+            marker.on('dblclick', () => {
+              toggleLocationVisited(loc.id);
+            });
             
-            if (!isNaN(lat) && !isNaN(lng)) {
-              const marker = L.marker([lat, lng], { icon })
-                .addTo(mapInstanceRef.current)
-                .bindPopup(loc.name || '');
-              
-              mapMarkerRef.current.push({
-                itemId: loc.id,
-                categoryId: loc.markerCategoryId,
-                marker
-              });
-            }
-          } catch (error) {
-            console.warn('Failed to create marker for location:', loc.id, error);
+            mapMarkerRef.current.push({
+              itemId: loc.id,
+              categoryId: loc.markerCategoryId,
+              marker,
+              category,
+              isVisited
+            });
+          }
+        } catch (error) {
+          console.warn('Failed to create marker for location:', loc.id, error);
+        }
+      } else {
+        // 更新已存在标记的访问状态
+        const markerData = mapMarkerRef.current.find(m => m.itemId === loc.id);
+        if (markerData && markerData.category) {
+          // 检查当前标记的访问状态
+          const currentIsVisited = markerData.isVisited || false;
+          
+          if (currentIsVisited !== isVisited) {
+            // 更新图标
+            const iconPath = `${import.meta.env.BASE_URL}assets/map/icons/${markerData.category.img}`;
+            const newIcon = createIcon(iconPath, markerData.category.color, isVisited);
+            markerData.marker.setIcon(newIcon);
+            // 更新存储的访问状态
+            markerData.isVisited = isVisited;
           }
         }
       }
     });
-  }, [visibleLocations, catalog]);
+  }, [visibleLocations, catalog, version, toggleLocationVisited, isLocationVisited]);
 
-  return <div ref={mapContainerRef} style={CONTAINER_STYLE} />;
+  return (
+    <div style={CONTAINER_STYLE}>
+      <div 
+        ref={mapContainerRef} 
+        style={{ 
+          width: '100%', 
+          height: '100%',
+          backgroundColor: '#000'
+        }} 
+      />
+      {showTip && (
+        <div style={TIP_BOX_STYLE}>
+          <button
+            style={CLOSE_BUTTON_STYLE}
+            onClick={() => setShowTip(false)}
+            onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.1)'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+            aria-label="close tips"
+          >
+            ×
+          </button>
+          <div style={{ paddingRight: '20px' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>💡 Tips</div>
+            <div style={{ lineHeight: '1.5' }}>
+            Double-click the map marker to mark it as visited (gray), and double-click again to undo the marker.
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default MapComponent;
